@@ -15,18 +15,15 @@ const createSubCategory = asyncWrapper(async (req, res, next) => {
     return next(new CustomError("Wrong category id, Category not found"));
   }
 
-  newSubCategory.isActive = category.isActive; 
-
-  newSubCategory.subCategorySlug = slugify(newSubCategory.name, {
-    lower: true,
-  });
+  newSubCategory.isActive = category.isActive;
 
   newSubCategory.image = req.file ? req.file.filename : undefined;
 
-  const subcategory = await SubCategory.create({ ...newSubCategory });
+  
 
-  res
-    .status(201)
+  const subcategory = await SubCategory.create(newSubCategory);
+
+   res.status(201)
     .json({ status: httpStatusText.SUCCESS, data: { subcategory } });
 });
 
@@ -89,7 +86,7 @@ const updateSubCategoryById = asyncWrapper(async (req, res, next) => {
   }
   let updatedSubCategory = await SubCategory.findByIdAndUpdate(
     subcategoryId,
-    { ...updatedData },
+    updatedData,
 
     { new: true, runValidators: true }
   )

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const slugify = require("slugify");
 
 const subcategorySchema = new mongoose.Schema(
   {
@@ -14,12 +15,11 @@ const subcategorySchema = new mongoose.Schema(
 
     subCategorySlug: {
       type: String,
-      unique: true
-    }
-    ,
+      unique: true,
+    },
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
+      ref: "Category",
       required: [true, "Category Id is required"],
     },
     description: {
@@ -39,8 +39,16 @@ const subcategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// unique only inside category
+// unique name only inside category
 subcategorySchema.index({ name: 1, categoryId: 1 }, { unique: true });
 
+subcategorySchema.pre("save", function (next) {
+  if (this.isModified("name")) {
+    this.subCategorySlug = slugify(this.name, {
+      lower: true,
+    });
+  }
+  next();
+});
 
 module.exports = mongoose.model("SubCategory", subcategorySchema);

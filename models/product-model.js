@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const slugify = require("slugify");
 
 const productSchema = new mongoose.Schema(
   {
@@ -11,9 +12,9 @@ const productSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    productSlug:{
+    productSlug: {
       type: String,
-      unique: true
+      unique: true,
     },
     description: {
       type: String,
@@ -25,7 +26,7 @@ const productSchema = new mongoose.Schema(
       required: [true, "Price is required"],
       min: [0, "Invalid Price"],
     },
- 
+
     brand: {
       type: String,
       default: "Generic",
@@ -43,7 +44,11 @@ const productSchema = new mongoose.Schema(
     size: {
       type: [String],
     },
-    subCategoryId: { type: mongoose.Schema.Types.ObjectId, ref: "SubCategory" },
+    subCategoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubCategory",
+      required: [true, "Sub Category is required"],
+    },
 
     isActive: {
       type: Boolean,
@@ -52,5 +57,14 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+productSchema.pre("save", function (next) {
+  if (this.isModified("name")) {
+    this.productSlug = slugify(this.name, {
+      lower: true,
+    });
+  }
+  next();
+});
 
 module.exports = mongoose.model("Product", productSchema);

@@ -9,11 +9,10 @@ const SubCategory = require("../models/subcategory-model");
 
 const createCategory = asyncWrapper(async (req, res, next) => {
   let newCategory = { ...req.body };
-  newCategory.categorySlug = slugify(newCategory.name, { lower: true });
 
   newCategory.image = req.file ? req.file.filename : undefined;
 
-  const category = await Category.create({ ...newCategory });
+  const category = await Category.create(newCategory);
 
   res.status(201).json({
     status: httpStatusText.SUCCESS,
@@ -79,7 +78,7 @@ const updateCategoryById = asyncWrapper(async (req, res, next) => {
 
   const updatedCategory = await Category.findByIdAndUpdate(
     req.params.id,
-    { ...updatedData },
+    updatedData ,
     { new: true, runValidators: true }
   );
 

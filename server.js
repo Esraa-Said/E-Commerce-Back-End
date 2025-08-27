@@ -4,6 +4,8 @@ const CustomError = require("./utils/custom-error");
 const connectDB = require("./config/db");
 const categoryRouter = require("./routes/category-routes");
 const subcategoryRouter = require("./routes/sub-category-routes");
+const productRouter = require("./routes/product-routes");
+
 const globalErrorHandler = require("./middlewares/global-error-handler-middleware");
 
 const app = express();
@@ -13,14 +15,16 @@ connectDB();
 
 // Routers
 app.use("/category", categoryRouter);
-app.use("/subcategory", subcategoryRouter);
 
+app.use("/subcategory", subcategoryRouter);
+app.use("/product", productRouter);
 
 
 // view images
-// category + subcategory
+
 app.use('/ECommerceImages/category', express.static(path.join(__dirname, 'ECommerce-images', 'category')));
 app.use('/ECommerceImages/subcategory', express.static(path.join(__dirname, 'ECommerce-images', 'subcategory')));
+app.use('/ECommerceImages/product', express.static(path.join(__dirname, 'ECommerce-images', 'product')));
 
 // Unknown Route
 app.all(/.*/,(req, res, next) => {
