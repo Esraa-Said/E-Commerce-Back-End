@@ -4,16 +4,18 @@ const CustomError = require("../utils/custom-error");
 
 const diskStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let folder = "ECommerce";
+    let folder = "ECommerce-images";
 
     if (req.baseUrl.includes("category")) {
-      folder = "ECommerce/category";
+      folder = "ECommerce-images/category";
+    } else if (req.baseUrl.includes("subcategory")) {
+      folder = "ECommerce-images/subcategory";
     } else if (req.baseUrl.includes("product")) {
-      folder = "ECommerce/product";
+      folder = "ECommerce-images/product";
     } else if (req.baseUrl.includes("user")) {
-      folder = "ECommerce/user";
+      folder = "ECommerce-images/user";
     } else if (req.baseUrl.includes("about")) {
-      folder = "ECommerce/about";
+      folder = "ECommerce-images/about";
     }
     if (!fs.existsSync(folder)) {
       // if folder not exists, create it

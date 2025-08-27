@@ -2,14 +2,22 @@ const fs = require("fs").promises;
 const path = require("path");
 const CustomError = require("./custom-error");
 
-const removeImage = async (collectionName, fileName) => {
+const removeImage = async (foldername, fileName) => {
   try {
-    await fs.unlink(
-      path.join(__dirname, "..", "ECommerce", collectionName, fileName)
+    const filePath = path.join(
+      __dirname,
+      "..",
+      "ECommerce-images",
+      foldername,
+      fileName
     );
-  } catch (unlinkErr) {
+
+    await fs.access(filePath).catch(() => null);
+
+    await fs.unlink(filePath).catch(() => null);
+  } catch (err) {
     throw new CustomError(
-      `Failed to delete uploaded file: ${unlinkErr?.message}`,
+      `Failed to delete uploaded file: ${err?.message}`,
       500
     );
   }

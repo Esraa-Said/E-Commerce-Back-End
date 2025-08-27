@@ -6,7 +6,7 @@ const pagination = async (req,Model, filter = {}, populate = "")=>{
      const skip = (page - 1) * limit;
     
     
-    const query = Model.find(filter, {__v: 0}).skip(skip).limit(limit);
+    let query = Model.find(filter, {__v: 0}).skip(skip).limit(limit);
 
     if(populate) query = query.populate(populate);
 

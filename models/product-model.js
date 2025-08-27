@@ -5,9 +5,15 @@ const productSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, "Product name is required"],
+      minlength: [3, "Minimum product name length is 3 characters"],
+      maxlength: [100, "Maximum product name length is 100 characters"],
       unique: true,
       trim: true,
       lowercase: true,
+    },
+    productSlug:{
+      type: String,
+      unique: true
     },
     description: {
       type: String,
