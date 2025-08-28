@@ -93,6 +93,13 @@ const updateProductById = asyncWrapper(async (req, res, next) => {
       lower: true,
     });
   }
+
+    updatedData.size = Array.isArray(updatedData.size) ? updatedData.size : oldProduct.size;
+    if(req.body.size && typeof (req.body.size === "string")){
+      updatedData.size.push(req.body.size);
+    }
+  
+
   let updatedProduct = await Product.findByIdAndUpdate(
     productId,
     updatedData,
