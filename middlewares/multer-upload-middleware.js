@@ -11,8 +11,8 @@ const diskStorage = multer.diskStorage({
     } else if (req.baseUrl.includes("subcategory")) {
       folder = "ECommerce-images/subcategory";
     } else if (req.baseUrl.includes("product")) {
+     
       folder = "ECommerce-images/product";
-      
     } else if (req.baseUrl.includes("user")) {
       folder = "ECommerce-images/user";
     } else if (req.baseUrl.includes("about")) {

@@ -44,16 +44,28 @@ const prodErrors = (res, error) => {
 };
 
 const errorHandler = async (err, req, res, next) => {
-  if (req.file?.filename) {
-    if (req.baseUrl.includes("category")) {
-      await removeImage("category", req.file.filename);
-    } else if (req.baseUrl.includes("subcategory")) {
-      await removeImage("subcategory", req.file.filename);
-    } else if (req.baseUrl.includes("product")) {
-      await removeImage("product", req.file.filename);
-    } else if (req.baseUrl.includes("user")) {
-      await removeImage("user", req.file.filename);
+  try {
+    // one image
+    if (req.file?.filename) {
+      if (req.baseUrl.includes("category")) {
+        await removeImage("category", req.file.filename);
+      } else if (req.baseUrl.includes("subcategory")) {
+        await removeImage("subcategory", req.file.filename);
+      } else if (req.baseUrl.includes("user")) {
+        await removeImage("user", req.file.filename);
+      } else if (req.baseUrl.includes("about")) {
+        await removeImage("about", req.file.filename);
+      }
     }
+
+    // product images
+    if(req.files?.productImage) {
+      await removeImage("product", req.files.productImage);
+    }
+
+
+  } catch (cleanupErr) {
+    console.error("Error cleaning up uploaded files:", cleanupErr.message);
   }
   err.statusCode = err.statusCode || 500;
   err.status = err.status || httpStatusText.ERROR;

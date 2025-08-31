@@ -4,7 +4,7 @@ const multerUpload = require("../middlewares/multer-upload-middleware");
 
 const router = express.Router();
 
-router.route('/').get(productControllers.getAllProduct).post(multerUpload.single('image'),  productControllers.createProduct);
-router.route('/:id').get(productControllers.getProductById).delete(productControllers.deleteProductById).patch(multerUpload.single('image'),productControllers.updateProductById);
+router.route('/').get(productControllers.getAllProduct).post(multerUpload.fields([{name: 'productImage', maxCount:12 }]),  productControllers.createProduct);
+router.route('/:id').get(productControllers.getProductById).delete(productControllers.deleteProductById).patch(multerUpload.fields([{name: 'productImage', maxCount:12 }]),productControllers.updateProductById);
 
 module.exports = router;

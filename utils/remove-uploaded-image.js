@@ -4,17 +4,17 @@ const CustomError = require("./custom-error");
 
 const removeImage = async (foldername, fileName) => {
   try {
-    const filePath = path.join(
-      __dirname,
-      "..",
-      "ECommerce-images",
-      foldername,
-      fileName
-    );
-
-    await fs.access(filePath).catch(() => null);
-
-    await fs.unlink(filePath).catch(() => null);
+    if (foldername === "product") {
+      fileName.forEach(async (file) => {
+        let removedFile = path.join(__dirname, "..", "ECommerce-images", foldername, file);
+        await fs.access(removedFile).catch(() => null);
+        await fs.unlink(removedFile).catch(() => null);
+      });
+    } else {
+      let removedFile = path.join(__dirname, "..", "ECommerce-images", foldername, fileName);
+      await fs.access(removedFile).catch(() => null);
+      await fs.unlink(removedFile).catch(() => null);
+    }
   } catch (err) {
     throw new CustomError(
       `Failed to delete uploaded file: ${err?.message}`,

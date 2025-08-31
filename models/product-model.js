@@ -21,29 +21,51 @@ const productSchema = new mongoose.Schema(
       required: [true, "Product description is required"],
       maxlength: [500, "Description too long"],
     },
-    price: {
-      type: Number,
-      required: [true, "Price is required"],
-      min: [0, "Invalid Price"],
-    },
 
     brand: {
       type: String,
       default: "Generic",
     },
-    stock: {
-      type: Number,
-      required: [true, "Product quantity is required"],
-      min: [0, "Invalid Quantity"],
-    },
-    image: {
-      type: String,
-      required: [true, "Product image is required"],
+
+    productImage: {
+      type: [String],
+
+      validate: {
+        validator: function (imgs) {
+          return Array.isArray(imgs) && imgs.length;
+        },
+        message: 'Product must have at least one image'
+      },
     },
 
-    size: {
-      type: [String],
+    variants: {
+      type: [
+        {
+          color: {
+            type: String,
+            required: [true, "Product Color is required"],
+          },
+          size: { type: String, required: [true, "Product Size is required"] },
+          price: {
+            type: Number,
+            required: [true, "Price is required"],
+            min: [0, "Invalid Price"],
+          },
+          stock: {
+            type: Number,
+            required: [true, "Product quantity is required"],
+            min: [0, "Invalid Quantity"],
+          },
+        },
+      ],
+      validate: {
+        validator: function (arr) {
+          return Array.isArray(arr) && arr.length > 0;
+        },
+        message: "Product must have at least one variant",
+      },
     },
+
     subCategoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SubCategory",

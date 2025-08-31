@@ -7,32 +7,47 @@ const CustomError = require("../utils/custom-error");
 const pagination = require("../utils/pagination");
 const removeImage = require("../utils/remove-uploaded-image");
 
-const createProduct = asyncWrapper(async (req, res, next) => {
-  let newProduct = { ...req.body };
+// helper: parse variants safely
+const parseVariants = (variants) => {
+  if (typeof variants === "string") {
+    try {
+      return JSON.parse(variants);
+    } catch {
+      throw new CustomError("Invalid variants format", 400);
+    }
+  }
+  return variants;
+};
 
-  let subCategory = await SubCategory.findById(newProduct.subCategoryId);
+// helper: handle uploaded images
+const handleImages = (files) =>
+  files?.productImage?.map((img) => img.filename) || [];
+
+const createProduct = asyncWrapper(async (req, res, next) => {
+  const newProduct = { ...req.body };
+
+  // validate subCategory
+  const subCategory = await SubCategory.findById(newProduct.subCategoryId);
   if (!subCategory) {
-    return next(new CustomError("Sub Category not found"));
+    return next(new CustomError("Sub Category not found", 404));
   }
   newProduct.isActive = subCategory.isActive;
 
-  newProduct.image = req.file ? req.file.filename : undefined;
+  // handle images
+  newProduct.productImage = handleImages(req.files);
 
-  // Ensure size is an array
-  newProduct.size = Array.isArray(newProduct.size) ? newProduct.size : [];
-
-  // If a single size is provided (string), push it
-  if (req.body.size && typeof req.body.size === "string") {
-    newProduct.size.push(req.body.size);
-  }
+  // handle variants
+  newProduct.variants = parseVariants(newProduct.variants);
 
   const product = await Product.create(newProduct);
 
-  res.status(201).json({ status: httpStatusText.SUCCESS, data: { product } });
+  res
+    .status(201)
+    .json({ status: httpStatusText.SUCCESS, data: { product } });
 });
 
-const getAllProduct = asyncWrapper(async (req, res, next) => {
-  let { data, page, limit, totalDocs, totalPages } = await pagination(
+const getAllProduct = asyncWrapper(async (req, res) => {
+  const { data, page, limit, totalDocs, totalPages } = await pagination(
     req,
     Product
   );
@@ -47,63 +62,60 @@ const getAllProduct = asyncWrapper(async (req, res, next) => {
   });
 });
 
-
-
 const getProductById = asyncWrapper(async (req, res, next) => {
-  const productId = req.params.id;
-
-  let product = await Product.findById(productId, {
-    __v: 0,
-  }).populate("subCategoryId");
+  const product = await Product.findById(req.params.id, { __v: 0 }).populate(
+    "subCategoryId"
+  );
 
   if (!product) {
     return next(new CustomError("Product not found", 404));
   }
 
-  res
-    .status(200)
-    .json({ status: httpStatusText.SUCCESS, data: { product } });
+  res.status(200).json({ status: httpStatusText.SUCCESS, data: { product } });
 });
-
-
 
 const updateProductById = asyncWrapper(async (req, res, next) => {
   const productId = req.params.id;
-  let updatedData = { ...req.body };
-  delete updatedData.image;
-  let oldProduct = await Product.findById(productId);
+  const updatedData = { ...req.body };
+  delete updatedData.productImage; // prevent direct override
+
+  const oldProduct = await Product.findById(productId);
   if (!oldProduct) {
     return next(new CustomError("Product not found", 404));
   }
 
   if (updatedData.subCategoryId) {
-    let subcategory = await SubCategory.findById(updatedData.subCategoryId);
+    const subcategory = await SubCategory.findById(updatedData.subCategoryId);
     if (!subcategory) {
-      return next(new CustomError("Wrong sub category id, Sub Category not found"));
+      return next(
+        new CustomError("Wrong sub category id, Sub Category not found", 400)
+      );
     }
   }
 
-  if (req.file) {
-    await removeImage("product", oldProduct.image);
-    updatedData.image = req.file.filename;
+  // update images if uploaded
+  if (req.files?.productImage?.length) {
+    await removeImage("product", oldProduct.productImage);
+    updatedData.productImage = handleImages(req.files);
   }
 
+  // slugify if name changed
   if (updatedData.name) {
-    updatedData.productSlug = slugify(updatedData.name, {
-      lower: true,
-    });
+    updatedData.productSlug = slugify(updatedData.name, { lower: true });
   }
 
-    updatedData.size = Array.isArray(updatedData.size) ? updatedData.size : oldProduct.size;
-    if(req.body.size && typeof (req.body.size === "string")){
-      updatedData.size.push(req.body.size);
-    }
-  
+  // update variants
+  updatedData.variants = parseVariants(updatedData.variants);
+  if (updatedData.variants) {
+    updatedData.variants = [
+      ...oldProduct.variants,
+      ...updatedData.variants,
+    ];
+  }
 
-  let updatedProduct = await Product.findByIdAndUpdate(
+  const updatedProduct = await Product.findByIdAndUpdate(
     productId,
     updatedData,
-
     { new: true, runValidators: true }
   )
     .select({ __v: 0 })
@@ -115,20 +127,25 @@ const updateProductById = asyncWrapper(async (req, res, next) => {
   });
 });
 
-
 const deleteProductById = asyncWrapper(async (req, res, next) => {
   const deletedProduct = await Product.findByIdAndDelete(req.params.id);
 
   if (!deletedProduct) {
-    const error = new CustomError("Product not found", 404);
-    return next(error);
+    return next(new CustomError("Product not found", 404));
   }
-  await removeImage("product", deletedProduct.image);
+
+  await removeImage("product", deletedProduct.productImage);
+
   res.status(200).json({
     status: httpStatusText.SUCCESS,
     data: { product: deletedProduct },
   });
 });
 
-
-module.exports = { createProduct, getAllProduct, getProductById, updateProductById , deleteProductById};
+module.exports = {
+  createProduct,
+  getAllProduct,
+  getProductById,
+  updateProductById,
+  deleteProductById,
+};
