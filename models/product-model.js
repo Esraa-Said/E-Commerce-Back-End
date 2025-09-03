@@ -7,7 +7,7 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: [true, "Product name is required"],
       minlength: [3, "Minimum product name length is 3 characters"],
-      maxlength: [100, "Maximum product name length is 100 characters"],
+      maxlength: [20, "Maximum product name length is 20 characters"],
       unique: true,
       trim: true,
       lowercase: true,
@@ -34,7 +34,7 @@ const productSchema = new mongoose.Schema(
         validator: function (imgs) {
           return Array.isArray(imgs) && imgs.length;
         },
-        message: 'Product must have at least one image'
+        message: "Product must have at least one image",
       },
     },
 
@@ -43,9 +43,40 @@ const productSchema = new mongoose.Schema(
         {
           color: {
             type: String,
+            enum: [
+              "red",
+              "blue",
+              "green",
+              "black",
+              "white",
+              "yellow",
+              "purple",
+              "orange",
+              "gray",
+              "brown",
+              "pink",
+              "beige",
+            ],
             required: [true, "Product Color is required"],
           },
-          size: { type: String, required: [true, "Product Size is required"] },
+          size: {
+            type: String,
+            enum: [
+              "XS",
+              "S",
+              "M",
+              "L",
+              "XL",
+              "XXL",
+              "36",
+              "37",
+              "38",
+              "39",
+              "40",
+              "41",
+            ],
+            required: [true, "Product Size is required"],
+          },
           price: {
             type: Number,
             required: [true, "Price is required"],
@@ -58,12 +89,21 @@ const productSchema = new mongoose.Schema(
           },
         },
       ],
-      validate: {
-        validator: function (arr) {
-          return Array.isArray(arr) && arr.length > 0;
+      validate: [
+        {
+          validator: function (arr) {
+            return Array.isArray(arr) && arr.length > 0;
+          },
+          message: "Product must have at least one variant",
         },
-        message: "Product must have at least one variant",
-      },
+        {
+          validator: function (arr) {
+            const unique = new Set(arr.map((a) => `${a.size}-${a.color}`));
+            return unique.size === arr.length;
+          },
+          message: "Variants must be unique (color + size should not repeat)",
+        },
+      ],
     },
 
     subCategoryId: {

@@ -10,6 +10,8 @@ const castErrorHandler = (err) => {
 const duplicateKeyErrorHandler = (err) => {
   const name = err.keyValue.name;
   const msg = `The value '${name}' already exists. Please choose another one.`;
+
+  
   return new CustomError(msg, 400);
 };
 

@@ -9,10 +9,12 @@ const removeImage = require("../utils/remove-uploaded-image");
 
 // helper: parse variants safely
 const parseVariants = (variants) => {
+
   if (typeof variants === "string") {
     try {
       return JSON.parse(variants);
     } catch {
+      
       throw new CustomError("Invalid variants format", 400);
     }
   }

@@ -6,10 +6,14 @@ const categoryRouter = require("./routes/category-routes");
 const subcategoryRouter = require("./routes/sub-category-routes");
 const productRouter = require("./routes/product-routes");
 const aboutRouter = require("./routes/about-routes");
-
+const cors = require("cors");
 const globalErrorHandler = require("./middlewares/global-error-handler-middleware");
 
 const app = express();
+
+app.use(cors({origin: "*"}));
+
+
 require("dotenv").config();
 
 connectDB();
@@ -22,7 +26,6 @@ app.use("/about", aboutRouter);
 
 
 // view images
-
 app.use('/ECommerceImages/category', express.static(path.join(__dirname, 'ECommerce-images', 'category')));
 app.use('/ECommerceImages/subcategory', express.static(path.join(__dirname, 'ECommerce-images', 'subcategory')));
 app.use('/ECommerceImages/product', express.static(path.join(__dirname, 'ECommerce-images', 'product')));
