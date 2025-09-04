@@ -14,7 +14,7 @@ const parseVariants = (variants) => {
     try {
       return JSON.parse(variants);
     } catch {
-      
+
       throw new CustomError("Invalid variants format", 400);
     }
   }
@@ -51,7 +51,9 @@ const createProduct = asyncWrapper(async (req, res, next) => {
 const getAllProduct = asyncWrapper(async (req, res) => {
   const { data, page, limit, totalDocs, totalPages } = await pagination(
     req,
-    Product
+    Product, 
+    {...req.query},
+    "subCategoryId"
   );
 
   res.status(200).json({
@@ -101,10 +103,6 @@ const updateProductById = asyncWrapper(async (req, res, next) => {
     updatedData.productImage = handleImages(req.files);
   }
 
-  // slugify if name changed
-  if (updatedData.name) {
-    updatedData.productSlug = slugify(updatedData.name, { lower: true });
-  }
 
   // update variants
   updatedData.variants = parseVariants(updatedData.variants);
@@ -115,13 +113,11 @@ const updateProductById = asyncWrapper(async (req, res, next) => {
     ];
   }
 
-  const updatedProduct = await Product.findByIdAndUpdate(
-    productId,
-    updatedData,
-    { new: true, runValidators: true }
-  )
-    .select({ __v: 0 })
-    .populate("subCategoryId", { __v: 0 });
+  Object.assign(oldProduct, updatedData);
+  const updatedProduct = await oldProduct.save();
+
+
+  await updatedProduct.populate("subCategoryId", { __v: 0 });
 
   res.status(200).json({
     status: httpStatusText.SUCCESS,

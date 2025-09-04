@@ -116,11 +116,28 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true, // admin can deactivate instead of deleting
     },
+    quantity: {
+      type: Number,
+      default: 0,
+      min: [0, "Invalid quantity"],
+    },
+
+    stock:{
+      type: String,
+      enum: ['in-stock' , 'out-of-stock'],
+      default: 'out-of-stock',
+      min: [0, "Invalid stock"],
+    }
   },
+
   { timestamps: true }
 );
 
 productSchema.pre("save", function (next) {
+  if (this.variants && this.variants.length) {
+    this.quantity = this.variants.reduce((sum, v) => sum + (v.stock || 0), 0)
+    this.stock = this.quantity ? 'in-stock' : 'out-of-stock';
+  }
   if (this.isModified("name")) {
     this.productSlug = slugify(this.name, {
       lower: true,
