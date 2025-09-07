@@ -1,4 +1,3 @@
-const slugify = require("slugify");
 const asyncWrapper = require("../middlewares/async-wrapper");
 const httpStatusText = require("../utils/http-status-text");
 const Product = require("../models/product-model");
@@ -9,19 +8,18 @@ const removeImage = require("../utils/remove-uploaded-image");
 
 // helper: parse variants safely
 const parseVariants = (variants) => {
-
+  if (!variants) return [];
   if (typeof variants === "string") {
     try {
       return JSON.parse(variants);
     } catch {
-
       throw new CustomError("Invalid variants format", 400);
     }
   }
   return variants;
 };
 
-// helper: handle uploaded images
+// handle uploaded images
 const handleImages = (files) =>
   files?.productImage?.map((img) => img.filename) || [];
 
@@ -43,16 +41,14 @@ const createProduct = asyncWrapper(async (req, res, next) => {
 
   const product = await Product.create(newProduct);
 
-  res
-    .status(201)
-    .json({ status: httpStatusText.SUCCESS, data: { product } });
+  res.status(201).json({ status: httpStatusText.SUCCESS, data: { product } });
 });
 
 const getAllProduct = asyncWrapper(async (req, res) => {
   const { data, page, limit, totalDocs, totalPages } = await pagination(
     req,
-    Product, 
-    {...req.query},
+    Product,
+    { ...req.query },
     "subCategoryId"
   );
 
@@ -103,19 +99,14 @@ const updateProductById = asyncWrapper(async (req, res, next) => {
     updatedData.productImage = handleImages(req.files);
   }
 
-
   // update variants
-  updatedData.variants = parseVariants(updatedData.variants);
   if (updatedData.variants) {
-    updatedData.variants = [
-      ...oldProduct.variants,
-      ...updatedData.variants,
-    ];
+    updatedData.variants = parseVariants(updatedData.variants);
+    updatedData.variants = updatedData.variants;
   }
 
   Object.assign(oldProduct, updatedData);
   const updatedProduct = await oldProduct.save();
-
 
   await updatedProduct.populate("subCategoryId", { __v: 0 });
 

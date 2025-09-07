@@ -22,11 +22,10 @@ const productSchema = new mongoose.Schema(
       maxlength: [500, "Description too long"],
     },
 
-    brand: {
-      type: String,
-      default: "Generic",
+    sold: {
+      type: Number,
+      default: 0,
     },
-
     productImage: {
       type: [String],
 
@@ -36,6 +35,16 @@ const productSchema = new mongoose.Schema(
         },
         message: "Product must have at least one image",
       },
+    },
+    gender: {
+      type: String,
+      enum: ["men", "women", "unisex", "boys", "girls"],
+      default: "unisex",
+    },
+    price: {
+      type: Number,
+      required: [true, "Price is required"],
+      min: [0, "Invalid Price"],
     },
 
     variants: {
@@ -77,11 +86,6 @@ const productSchema = new mongoose.Schema(
             ],
             required: [true, "Product Size is required"],
           },
-          price: {
-            type: Number,
-            required: [true, "Price is required"],
-            min: [0, "Invalid Price"],
-          },
           stock: {
             type: Number,
             required: [true, "Product quantity is required"],
@@ -89,6 +93,7 @@ const productSchema = new mongoose.Schema(
           },
         },
       ],
+
       validate: [
         {
           validator: function (arr) {
@@ -122,12 +127,12 @@ const productSchema = new mongoose.Schema(
       min: [0, "Invalid quantity"],
     },
 
-    stock:{
+    availability: {
       type: String,
-      enum: ['in-stock' , 'out-of-stock'],
-      default: 'out-of-stock',
+      enum: ["in-stock", "out-of-stock"],
+      default: "out-of-stock",
       min: [0, "Invalid stock"],
-    }
+    },
   },
 
   { timestamps: true }
@@ -135,8 +140,8 @@ const productSchema = new mongoose.Schema(
 
 productSchema.pre("save", function (next) {
   if (this.variants && this.variants.length) {
-    this.quantity = this.variants.reduce((sum, v) => sum + (v.stock || 0), 0)
-    this.stock = this.quantity ? 'in-stock' : 'out-of-stock';
+    this.quantity = this.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    this.availability = this.quantity ? "in-stock" : "out-of-stock";
   }
   if (this.isModified("name")) {
     this.productSlug = slugify(this.name, {
