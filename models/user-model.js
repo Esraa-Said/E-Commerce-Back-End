@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
+const bcrypt = require("bcryptjs");
 
 const UserSchema = new mongoose.Schema(
   {
@@ -15,11 +16,7 @@ const UserSchema = new mongoose.Schema(
       minlength: [3, "Minimum name length is 3"],
       trim: true,
     },
-    username: {
-      type: String,
-      unique: true,
-      trim: true,
-    },
+
     email: {
       type: String,
       required: [true, "User email is required"],
@@ -47,17 +44,17 @@ const UserSchema = new mongoose.Schema(
       ],
       default: "customer",
     },
-    emailVerified: {
+    isVerified: {
       type: Boolean,
       default: false,
     },
-    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+  
   },
   { timestamps: true }
 );
 
-UserSchema.pre("save", function () {
-  if (this.role === "admin") this.wishlist = undefined;
+UserSchema.pre("save", async function (next) {
+  if (this.isModified("password")) this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
