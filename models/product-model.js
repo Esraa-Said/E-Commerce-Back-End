@@ -1,50 +1,58 @@
 const mongoose = require("mongoose");
 const slugify = require("slugify");
 
+const {
+  PRODUCT_GENDERS,
+  PRODUCT_COLORS,
+  PRODUCT_SIZES,
+} = require("../utils/productConstants");
+
 const productSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: [true, "Product name is required"],
-      minlength: [3, "Minimum product name length is 3 characters"],
-      maxlength: [20, "Maximum product name length is 20 characters"],
+      minlength: [3, "Minimum product name length is 3"],
+      maxlength: [50, "Maximum product name length is 50"],
       unique: true,
       trim: true,
-      lowercase: true,
     },
+
     productSlug: {
       type: String,
       unique: true,
+      index: true,
     },
+
     description: {
       type: String,
       required: [true, "Product description is required"],
-      maxlength: [500, "Description too long"],
+      maxlength: [2000, "Description too long"],
     },
 
     sold: {
       type: Number,
       default: 0,
     },
-    productImage: {
-      type: [String],
 
+    productImages: {
+      type: [String],
       validate: {
-        validator: function (imgs) {
-          return Array.isArray(imgs) && imgs.length;
-        },
+        validator: (imgs) => Array.isArray(imgs) && imgs.length > 0,
         message: "Product must have at least one image",
       },
     },
+
     gender: {
       type: String,
-      enum: ["men", "women", "unisex", "boys", "girls"],
+      enum: PRODUCT_GENDERS,
       default: "unisex",
     },
+
     price: {
       type: Number,
       required: [true, "Price is required"],
-      min: [0, "Invalid Price"],
+      min: [1, "Invalid price"],
     },
 
     variants: {
@@ -52,61 +60,37 @@ const productSchema = new mongoose.Schema(
         {
           color: {
             type: String,
-            enum: [
-              "red",
-              "blue",
-              "green",
-              "black",
-              "white",
-              "yellow",
-              "purple",
-              "orange",
-              "gray",
-              "brown",
-              "pink",
-              "beige",
-            ],
-            required: [true, "Product Color is required"],
+            enum: PRODUCT_COLORS,
+            required: [true, "Variant color is required"],
           },
           size: {
             type: String,
-            enum: [
-              "XS",
-              "S",
-              "M",
-              "L",
-              "XL",
-              "XXL",
-              "36",
-              "37",
-              "38",
-              "39",
-              "40",
-              "41",
-            ],
-            required: [true, "Product Size is required"],
+            enum: PRODUCT_SIZES,
+            required: [true, "Variant size is required"],
           },
           stock: {
             type: Number,
-            required: [true, "Product quantity is required"],
-            min: [0, "Invalid Quantity"],
+            min: 0,
+            required: [true, "Stock is required"],
+          },
+          sku: {
+            type: String,
+            unique: true,
+            sparse: true,
           },
         },
       ],
-
       validate: [
         {
-          validator: function (arr) {
-            return Array.isArray(arr) && arr.length > 0;
-          },
+          validator: (arr) => arr.length > 0,
           message: "Product must have at least one variant",
         },
         {
           validator: function (arr) {
-            const unique = new Set(arr.map((a) => `${a.size}-${a.color}`));
+            const unique = new Set(arr.map((v) => `${v.color}-${v.size}`));
             return unique.size === arr.length;
           },
-          message: "Variants must be unique (color + size should not repeat)",
+          message: "Variant color + size must be unique",
         },
       ],
     },
@@ -114,40 +98,38 @@ const productSchema = new mongoose.Schema(
     subCategoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SubCategory",
-      required: [true, "Sub Category is required"],
+      required: true,
     },
 
     isActive: {
       type: Boolean,
-      default: true, // admin can deactivate instead of deleting
+      default: true,
     },
+
     quantity: {
       type: Number,
       default: 0,
-      min: [0, "Invalid quantity"],
     },
 
     availability: {
       type: String,
       enum: ["in-stock", "out-of-stock"],
       default: "out-of-stock",
-      min: [0, "Invalid stock"],
     },
   },
-
   { timestamps: true }
 );
 
 productSchema.pre("save", function (next) {
-  if (this.variants && this.variants.length) {
-    this.quantity = this.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
-    this.availability = this.quantity ? "in-stock" : "out-of-stock";
+  if (this.variants?.length) {
+    this.quantity = this.variants.reduce((sum, v) => sum + v.stock, 0);
+    this.availability = this.quantity > 0 ? "in-stock" : "out-of-stock";
   }
+
   if (this.isModified("name")) {
-    this.productSlug = slugify(this.name, {
-      lower: true,
-    });
+    this.productSlug = slugify(this.name, { lower: true });
   }
+
   next();
 });
 

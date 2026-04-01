@@ -10,34 +10,43 @@ const categorySchema = new mongoose.Schema(
       maxlength: [100, "Maximum category name length is 100 characters"],
       unique: true,
       trim: true,
-      lowercase: true,
     },
+
     categorySlug: {
       type: String,
       unique: true,
+      index: true,
     },
+
     description: {
       type: String,
-      required: [true, 'Category description is required'],
-      maxlength: [500, "Description too long"],
+      required: [true, "Category description is required"],
+      maxlength: [1000, "Description too long"],
+      trim: true,
     },
+
     image: {
       type: String,
       required: [true, "Category image is required"],
     },
-    isActive:{
+
+    parentCategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      default: null,
+    },
+
+    isActive: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   { timestamps: true }
 );
 
 categorySchema.pre("save", function (next) {
   if (this.isModified("name")) {
-    this.categorySlug = slugify(this.name, {
-      lower: true,
-    });
+    this.categorySlug = slugify(this.name, { lower: true });
   }
   next();
 });

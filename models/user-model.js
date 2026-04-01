@@ -4,13 +4,13 @@ const bcrypt = require("bcryptjs");
 
 const UserSchema = new mongoose.Schema(
   {
-    firstname: {
+    firstName: {
       type: String,
       required: [true, "First name is required"],
       minlength: [3, "Minimum name length is 3"],
       trim: true,
     },
-    lastname: {
+    lastName: {
       type: String,
       required: [true, "Last name is required"],
       minlength: [3, "Minimum name length is 3"],
@@ -19,14 +19,17 @@ const UserSchema = new mongoose.Schema(
 
     email: {
       type: String,
-      required: [true, "User email is required"],
+      required: [true, "Email is required"],
+      lowercase: true,
       unique: true,
-      validate: [validator.isEmail, "Invalid Email"],
+      validate: [validator.isEmail, "Invalid Email Format"],
+      index: true,
     },
     password: {
       type: String,
       required: [true, "Password is required"],
       minlength: [8, "Minimum password length is 8"],
+      select: false,
     },
     phone: {
       type: String,
@@ -37,9 +40,9 @@ const UserSchema = new mongoose.Schema(
       enum: [
         "customer",
         "superAdmin",
-        "productManager",
-        "orderManager",
-        "customerSupport",
+        "productAdmin",
+        "orderAdmin",
+        "customerSupportAdmin",
         "marketingAdmin",
       ],
       default: "customer",
@@ -48,13 +51,17 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-  
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 UserSchema.pre("save", async function (next) {
-  if (this.isModified("password")) this.password = await bcrypt.hash(this.password, 10);
+  if (this.isModified("password"))
+    this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
