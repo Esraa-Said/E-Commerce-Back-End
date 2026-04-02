@@ -6,7 +6,9 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "User Id is required"],
+      index: true,
     },
+
     products: [
       {
         productId: {
@@ -39,42 +41,34 @@ const orderSchema = new mongoose.Schema(
       default: "pending",
     },
 
-    shippingAddress: {
-      street: {
-        type: String,
-        required: [true, "Street is required"],
-        trim: true,
-      },
-      city: {
-        type: String,
-        required: [true, "City is required"],
-        trim: true,
-      },
-      country: {
-        type: String,
-        required: [true, "Country is required"],
-        trim: true,
-      },
-      zip: {
-        type: String,
-        required: [true, "ZIP code is required"],
-        match: [/^\d{4,10}$/, "Please enter a valid ZIP code"],
-      },
+    shippingAddressId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserAddress",
+      required: [true, "Shipping address is required"],
     },
 
-    paymentMethod: {
-      type: String,
-      enum: ["cash", "creditCard", "paypal"],
-      required: [true, "Payment Method is required"],
+    paymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment",
+    },
+
+    couponId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coupon",
     },
 
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "failed"],
+      enum: ["pending", "paid", "failed", "refunded"],
       default: "pending",
     },
+
+    notes: {
+      type: String,
+      trim: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Order", orderSchema);

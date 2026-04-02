@@ -37,7 +37,7 @@ const UserAddressSchema = new mongoose.Schema(
       required: [true, "Region is required"],
       trim: true,
     },
-
+  
     postalCode: {
       type: String,
       required: [true, "Postal code is required"],

@@ -40,8 +40,20 @@ const categorySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    discountPercentage: {
+      type: Number,
+      min: [0, "Discount % must be >= 0"],
+      max: [100, "Discount % cannot exceed 100"],
+      default: 0,
+    },
+    discountAmount: {
+      type: Number,
+      min: [0, "Discount amount must be >= 0"],
+      default: 0,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 categorySchema.pre("save", function (next) {

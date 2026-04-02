@@ -26,7 +26,13 @@ const ratingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// one rating for one product from one user
 ratingSchema.index({ userId: 1, productId: 1 }, { unique: true });
+
+
+productSchema.virtual("averageRating").get(function () {
+  if (!this.ratings || this.ratings.length === 0) return 0;
+  const sum = this.ratings.reduce((acc, r) => acc + r.rating, 0);
+  return sum / this.ratings.length;
+});
 
 module.exports = mongoose.model("Rating", ratingSchema);

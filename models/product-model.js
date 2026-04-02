@@ -55,6 +55,15 @@ const productSchema = new mongoose.Schema(
       min: [1, "Invalid price"],
     },
 
+    discountPrice: {
+      type: Number,
+      default: 0,
+    },
+    hasDiscount: {
+      type: Boolean,
+      default: false,
+    },
+
     variants: {
       type: [
         {
@@ -117,7 +126,7 @@ const productSchema = new mongoose.Schema(
       default: "out-of-stock",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 productSchema.pre("save", function (next) {
