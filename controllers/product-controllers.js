@@ -1,7 +1,6 @@
-const asyncWrapper = require("../middlewares/async-wrapper");
+const asyncWrapper = require("../utils/async-wrapper");
 const httpStatusText = require("../utils/http-status-text");
 const Product = require("../models/product-model");
-const SubCategory = require("../models/subcategory-model");
 const CustomError = require("../utils/custom-error");
 const pagination = require("../utils/pagination");
 const removeImage = require("../utils/remove-uploaded-image");
@@ -26,12 +25,7 @@ const handleImages = (files) =>
 const createProduct = asyncWrapper(async (req, res, next) => {
   const newProduct = { ...req.body };
 
-  // validate subCategory
-  const subCategory = await SubCategory.findById(newProduct.subCategoryId);
-  if (!subCategory) {
-    return next(new CustomError("Sub Category not found", 404));
-  }
-  newProduct.isActive = subCategory.isActive;
+ 
 
   // handle images
   newProduct.productImage = handleImages(req.files);
@@ -49,7 +43,7 @@ const getAllProduct = asyncWrapper(async (req, res) => {
     req,
     Product,
     { ...req.query },
-    "subCategoryId"
+    //"subCategoryId"
   );
 
   res.status(200).json({
@@ -64,7 +58,7 @@ const getAllProduct = asyncWrapper(async (req, res) => {
 
 const getProductById = asyncWrapper(async (req, res, next) => {
   const product = await Product.findById(req.params.id, { __v: 0 }).populate(
-    "subCategoryId"
+  //  "subCategoryId"
   );
 
   if (!product) {
@@ -84,14 +78,14 @@ const updateProductById = asyncWrapper(async (req, res, next) => {
     return next(new CustomError("Product not found", 404));
   }
 
-  if (updatedData.subCategoryId) {
-    const subcategory = await SubCategory.findById(updatedData.subCategoryId);
-    if (!subcategory) {
-      return next(
-        new CustomError("Wrong sub category id, Sub Category not found", 400)
-      );
-    }
-  }
+  // if (updatedData.subCategoryId) {
+  //   const subcategory = await SubCategory.findById(updatedData.subCategoryId);
+  //   if (!subcategory) {
+  //     return next(
+  //       new CustomError("Wrong sub category id, Sub Category not found", 400)
+  //     );
+  //   }
+  // }
 
   // update images if uploaded
   if (req.files?.productImage?.length) {
@@ -108,7 +102,6 @@ const updateProductById = asyncWrapper(async (req, res, next) => {
   Object.assign(oldProduct, updatedData);
   const updatedProduct = await oldProduct.save();
 
-  await updatedProduct.populate("subCategoryId", { __v: 0 });
 
   res.status(200).json({
     status: httpStatusText.SUCCESS,

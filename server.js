@@ -2,34 +2,29 @@ const express = require("express");
 const path = require("path");
 const CustomError = require("./utils/custom-error");
 const connectDB = require("./config/db");
+const authRouter = require("./routes/auth-routes");
 const categoryRouter = require("./routes/category-routes");
-const subcategoryRouter = require("./routes/sub-category-routes");
 const productRouter = require("./routes/product-routes");
-const aboutRouter = require("./routes/about-routes");
 const cors = require("cors");
+require("dotenv").config();
 const globalErrorHandler = require("./middlewares/global-error-handler-middleware");
 
 const app = express();
 
-app.use(cors({origin: "*"}));
+app.use(express.json());
 
 
-require("dotenv").config();
+app.use(cors({origin: process.env.CLIENT_URL}));
+
+
+
 
 connectDB();
 
 // Routers
 app.use("/category", categoryRouter);
-app.use("/subcategory", subcategoryRouter);
 app.use("/product", productRouter);
-app.use("/about", aboutRouter);
-
-
-// view images
-app.use('/ECommerceImages/category', express.static(path.join(__dirname, 'ECommerce-images', 'category')));
-app.use('/ECommerceImages/subcategory', express.static(path.join(__dirname, 'ECommerce-images', 'subcategory')));
-app.use('/ECommerceImages/product', express.static(path.join(__dirname, 'ECommerce-images', 'product')));
-app.use('/ECommerceImages/about', express.static(path.join(__dirname, 'ECommerce-images', 'about')));
+app.use("/auth", authRouter);
 
 
 

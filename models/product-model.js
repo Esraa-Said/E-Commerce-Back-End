@@ -5,7 +5,7 @@ const {
   PRODUCT_GENDERS,
   PRODUCT_COLORS,
   PRODUCT_SIZES,
-} = require("../utils/productConstants");
+} = require("../utils/product-constants");
 
 const productSchema = new mongoose.Schema(
   {

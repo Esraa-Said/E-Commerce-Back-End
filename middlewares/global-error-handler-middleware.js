@@ -2,91 +2,105 @@ const CustomError = require("../utils/custom-error");
 const httpStatusText = require("../utils/http-status-text");
 const removeImage = require("../utils/remove-uploaded-image");
 
-const castErrorHandler = (err) => {
-  const msg = `Invalid value for ${err.path}: ${err.value}.`;
-  return new CustomError(msg, 400);
-};
+// -------------------------
+// 1) Mongoose Error Handlers
+// -------------------------
+const castErrorHandler = (err) =>
+  new CustomError(`Invalid value for ${err.path}: ${err.value}`, 400);
 
-const duplicateKeyErrorHandler = (err) => {
-  const name = err.keyValue.name;
-  const msg = `The value '${name}' already exists. Please choose another one.`;
-
-  
-  return new CustomError(msg, 400);
-};
+const duplicateKeyErrorHandler = (err) =>
+  new CustomError(
+    `'${Object.values(err.keyValue)[0]}' already exists.`,
+    400
+  );
 
 const validationErrorHandler = (err) => {
-  const errors = Object.values(err.errors).map((val) => val.message);
-  const errorMessages = errors.join(". ");
-  const msg = `Invalid input data ${errorMessages}.`;
-  return new CustomError(msg, 400);
+  const message = Object.values(err.errors)
+    .map((e) => e.message)
+    .join(". ");
+  return new CustomError(`Invalid input: ${message}`, 400);
 };
 
-const devErrors = (res, error) => {
-  res.status(error.statusCode).json({
-    status: error.status,
-    message: error.message,
-    stackTrace: error.stack,
-    error: error,
+// -------------------------
+// 2) Dev & Prod Responses
+// -------------------------
+const sendDevError = (res, err) => {
+  const statusCode = Number(err.statusCode) || 500;
+  const status = err.status || httpStatusText.ERROR;
+
+  res.status(statusCode).json({
+    status,
+    message: err.message,
+    error: err,
+    stack: err.stack,
   });
 };
 
-const prodErrors = (res, error) => {
-  if (error.isOperationalError) {
-    res.status(error.statusCode).json({
-      status: error.status,
-      message: error.message,
+const sendProdError = (res, err) => {
+  const statusCode = Number(err.statusCode) || 500;
+  const status = err.status || httpStatusText.ERROR;
+
+  // Operational errors
+  if (err.isOperationalError) {
+    return res.status(statusCode).json({
+      status,
+      message: err.message,
     });
-  } else {
-    res.status(500).json({
-      status: httpStatusText.ERROR,
-      message: "Something went wrong! Please try again later.",
-    });
+  }
+
+  // Unknown or programming errors
+  return res.status(500).json({
+    status: httpStatusText.ERROR,
+    message: "Something went wrong!",
+  });
+};
+
+// -------------------------
+// 3) Clean Uploaded Images
+// -------------------------
+const cleanupUploadedFiles = async (req) => {
+  // Single file
+  if (req.file?.filename) {
+    await removeImage(req.file.filename);
+  }
+
+  // Multiple files
+  if (req.files) {
+    for (const key of Object.keys(req.files)) {
+      for (const file of req.files[key]) {
+        await removeImage(file.filename);
+      }
+    }
   }
 };
 
+// -------------------------
+// 4) Global Error Handler
+// -------------------------
 const errorHandler = async (err, req, res, next) => {
-  try {
-    // one image
-    if (req.file?.filename) {
-      if (req.baseUrl.includes("category")) {
-        await removeImage("category", req.file.filename);
-      } else if (req.baseUrl.includes("subcategory")) {
-        await removeImage("subcategory", req.file.filename);
-      } else if (req.baseUrl.includes("user")) {
-        await removeImage("user", req.file.filename);
-      } else if (req.baseUrl.includes("about")) {
-        await removeImage("about", req.file.filename);
-      }
-    }
-
-    // product images
-    if(req.files?.productImage) {
-      await removeImage("product", req.files.productImage);
-    }
-
-
-  } catch (cleanupErr) {
-    console.error("Error cleaning up uploaded files:", cleanupErr.message);
-  }
-  err.statusCode = err.statusCode || 500;
+  err.statusCode = Number(err.statusCode) || 500;
   err.status = err.status || httpStatusText.ERROR;
-  err.message = err.message || "Internal Server Error";
 
-  if (process.env.NODE_ENV === "development") {
-    devErrors(res, err);
-  } else if (process.env.NODE_ENV === "production") {
-    if (err.name === "CastError") {
-      err = castErrorHandler(err);
-    }
-    if (err.name === "ValidationError") {
-      err = validationErrorHandler(err);
-    }
-    if (err.code === 11000) {
-      err = duplicateKeyErrorHandler(err);
-    }
-    prodErrors(res, err);
+  // Cleanup any uploaded images (Cloudinary)
+  try {
+    await cleanupUploadedFiles(req);
+  } catch (cleanupErr) {
+    console.error("Cleanup error:", cleanupErr.message);
   }
+
+  // Transform mongoose errors ONLY in production
+  if (process.env.NODE_ENV === "production") {
+    if (err.name === "CastError") err = castErrorHandler(err);
+    if (err.name === "ValidationError") err = validationErrorHandler(err);
+    if (err.code === 11000) err = duplicateKeyErrorHandler(err);
+  }
+
+  // Respond based on mode
+  if (process.env.NODE_ENV === "development") {
+    return sendDevError(res, err);
+  }
+
+  sendProdError(res, err);
 };
 
 module.exports = errorHandler;
