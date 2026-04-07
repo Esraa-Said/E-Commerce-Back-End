@@ -1,6 +1,8 @@
 const express = require("express");
 const categoryControllers = require("../controllers/category-controllers");
 const multerUpload = require("../middlewares/cloudinary-upload-middleware");
+const Category = require("../models/category-model");
+const checkDocumentsExistMiddleware = require("../middlewares/check-documents-exist-middleware");
 
 const router = express.Router();
 
@@ -9,7 +11,8 @@ router
   .get(categoryControllers.getAllCategories)
   .post(
     multerUpload.single("image"),
-    categoryControllers.createCategory
+    checkDocumentsExistMiddleware({ parentCategory: Category }),
+    categoryControllers.createCategory,
   );
 
 router
@@ -17,7 +20,9 @@ router
   .get(categoryControllers.getCategoryById)
   .patch(
     multerUpload.single("image"),
-    categoryControllers.updateCategory
+    checkDocumentsExistMiddleware({ parentCategory: Category }),
+
+    categoryControllers.updateCategory,
   )
   .delete(categoryControllers.deleteCategory);
 

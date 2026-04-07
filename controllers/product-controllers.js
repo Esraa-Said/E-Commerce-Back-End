@@ -1,49 +1,56 @@
-const asyncWrapper = require("../utils/async-wrapper");
-const httpStatusText = require("../utils/http-status-text");
 const Product = require("../models/product-model");
+const asyncWrapper = require("../utils/async-wrapper");
 const CustomError = require("../utils/custom-error");
+const httpStatusText = require("../utils/http-status-text");
 const pagination = require("../utils/pagination");
 const removeImage = require("../utils/remove-uploaded-image");
 
-// helper: parse variants safely
+
+// parse variants safely
 const parseVariants = (variants) => {
   if (!variants) return [];
   if (typeof variants === "string") {
     try {
       return JSON.parse(variants);
     } catch {
-      throw new CustomError("Invalid variants format", 400);
+      throw new CustomError("Invalid variants JSON format", 400);
     }
   }
   return variants;
 };
 
-// handle uploaded images
-const handleImages = (files) =>
-  files?.productImage?.map((img) => img.filename) || [];
+// extract uploaded images
+const extractImages = (files) =>
+  files?.productImages?.map((img) => img.filename) || [];
+
 
 const createProduct = asyncWrapper(async (req, res, next) => {
-  const newProduct = { ...req.body };
+  if (!req.files?.productImages?.length) {
+    return next(new CustomError("Product images are required", 400));
+  }
 
- 
+  const product = new Product({
+    ...req.body,
+    variants: parseVariants(req.body.variants),
+    productImages: extractImages(req.files),
+  });
 
-  // handle images
-  newProduct.productImage = handleImages(req.files);
+  await product.save();
 
-  // handle variants
-  newProduct.variants = parseVariants(newProduct.variants);
-
-  const product = await Product.create(newProduct);
-
-  res.status(201).json({ status: httpStatusText.SUCCESS, data: { product } });
+  res.status(201).json({
+    status: httpStatusText.SUCCESS,
+    message: "Product created successfully",
+    data: product,
+  });
 });
 
-const getAllProduct = asyncWrapper(async (req, res) => {
+
+const getAllProducts = asyncWrapper(async (req, res, next) => {
   const { data, page, limit, totalDocs, totalPages } = await pagination(
     req,
     Product,
-    { ...req.query },
-    //"subCategoryId"
+    req.query,
+    "categoryId"
   );
 
   res.status(200).json({
@@ -56,77 +63,72 @@ const getAllProduct = asyncWrapper(async (req, res) => {
   });
 });
 
+
 const getProductById = asyncWrapper(async (req, res, next) => {
-  const product = await Product.findById(req.params.id, { __v: 0 }).populate(
-  //  "subCategoryId"
+  const product = await Product.findById(req.params.id).populate(
+    "categoryId",
+    "name categorySlug"
   );
 
   if (!product) {
     return next(new CustomError("Product not found", 404));
   }
 
-  res.status(200).json({ status: httpStatusText.SUCCESS, data: { product } });
-});
-
-const updateProductById = asyncWrapper(async (req, res, next) => {
-  const productId = req.params.id;
-  const updatedData = { ...req.body };
-  delete updatedData.productImage; // prevent direct override
-
-  const oldProduct = await Product.findById(productId);
-  if (!oldProduct) {
-    return next(new CustomError("Product not found", 404));
-  }
-
-  // if (updatedData.subCategoryId) {
-  //   const subcategory = await SubCategory.findById(updatedData.subCategoryId);
-  //   if (!subcategory) {
-  //     return next(
-  //       new CustomError("Wrong sub category id, Sub Category not found", 400)
-  //     );
-  //   }
-  // }
-
-  // update images if uploaded
-  if (req.files?.productImage?.length) {
-    await removeImage("product", oldProduct.productImage);
-    updatedData.productImage = handleImages(req.files);
-  }
-
-  // update variants
-  if (updatedData.variants) {
-    updatedData.variants = parseVariants(updatedData.variants);
-    updatedData.variants = updatedData.variants;
-  }
-
-  Object.assign(oldProduct, updatedData);
-  const updatedProduct = await oldProduct.save();
-
-
   res.status(200).json({
     status: httpStatusText.SUCCESS,
-    data: { product: updatedProduct },
+    data: { product },
   });
 });
 
-const deleteProductById = asyncWrapper(async (req, res, next) => {
-  const deletedProduct = await Product.findByIdAndDelete(req.params.id);
 
-  if (!deletedProduct) {
+const updateProductById = asyncWrapper(async (req, res, next) => {
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
     return next(new CustomError("Product not found", 404));
   }
 
-  await removeImage("product", deletedProduct.productImage);
+  Object.assign(product, req.body);
+
+  if (req.body.variants) {
+    product.variants = parseVariants(req.body.variants);
+  }
+
+  if (req.files?.productImages?.length) {
+    await removeImage(product.productImages); 
+    product.productImages = extractImages(req.files); 
+  }
+
+  await product.save();
+
+  return res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    message: "Product updated successfully",
+    data: product,
+  });
+});
+
+
+const deleteProductById = asyncWrapper(async (req, res, next) => {
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    return next(new CustomError("Product not found", 404));
+  }
+
+  await removeImage(product.productImages);
+
+  await product.deleteOne();
 
   res.status(200).json({
     status: httpStatusText.SUCCESS,
-    data: { product: deletedProduct },
+    message: "Product deleted successfully",
   });
 });
 
 module.exports = {
   createProduct,
-  getAllProduct,
+  getAllProducts,
   getProductById,
   updateProductById,
   deleteProductById,

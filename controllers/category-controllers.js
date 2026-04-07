@@ -96,7 +96,7 @@ const updateCategory = asyncWrapper(async (req, res, next) => {
 
   if (req.file) {
     await removeImage(category.image);
-    
+
     updates.image = req.file.filename;
   }
   category = await Category.findByIdAndUpdate(req.params.id, updates, {
