@@ -5,6 +5,8 @@ const connectDB = require("./config/db");
 const authRouter = require("./routes/auth-routes");
 const categoryRouter = require("./routes/category-routes");
 const productRouter = require("./routes/product-routes");
+const countryRouter = require("./routes/country-routes");
+const userAddressRouter = require("./routes/user-address-routes");
 const cors = require("cors");
 require("dotenv").config();
 const globalErrorHandler = require("./middlewares/global-error-handler-middleware");
@@ -25,6 +27,8 @@ connectDB();
 app.use("/category", categoryRouter);
 app.use("/product", productRouter);
 app.use("/auth", authRouter);
+app.use("/user-address", userAddressRouter);
+app.use("/country", countryRouter);
 
 
 
